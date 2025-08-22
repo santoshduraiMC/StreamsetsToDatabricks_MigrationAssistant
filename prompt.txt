@@ -1,0 +1,249 @@
+You are helping with a large-scale code conversion project to migrate IBM StreamSets Transformer pipelines to Databricks notebooks.
+
+Each StreamSets JSON file represents a pipeline that performs transformations and writes to a target Delta table.
+The JSON contains multiple source readers (e.g., JDBC, DeltaLake, ADLSGen2), SQL processors, joins with dimension tables, aggregations, filters, and eventually merges into a target table using SCD2 logic.
+
+Your task is divided into three stages:
+
+✅ Stage 1: Parse and Visualize Pipeline
+- Parse the JSON and identify:
+  - Key Source tables. The target table might appear as a source in the pipeline, but is used only for SCD2 and merges, not as a true source. (ignore target table as source)
+  - All transformations (SQL, expressions, aggregates) including column transformation on fields.
+  - All joins (especially to lookups and other dimension tables)
+
+Produce the following:
+- Come up with Short business descriptions of what the Pipeline is trying to achieve. Use the source tables and target tables as referece. Write this as bullet points. Title : "✅ Objective"
+- Produce the Target Table Name. Title : "✅ Target Table Name"
+- Produce a numbered list of all key source tables. Title : "✅ Source Tables"
+- Produce Primary Keys. Title : "✅ Primary Keys:"
+- Produce Business Keys. Title : "✅ Business Keys:"
+- Produce Foreign Keys. Title : "✅ Foreign Keys:" If there are no columns still display the title, but show the value as none.
+- Produce the Target Table Structure with Data types. Include partion by columns if available. Dont display this as a sql create statement. Title : "✅ Target Table Structure". 
+- Produce Audit Columns that will be added. Title : "✅ Audit Columns"
+- Produce a target-to-source column mapping: Title : "✅ Source-to-Target Column Mapping with Confidence Scores:"
+  - Each target column → source table.column + transformation applied (if any)
+  - Include a confidence score for each mapping
+  - Always create this in a tabular form so its easier to read
+- Generate a visual flow (in text) that shows the below. Title : "✅ Pipeline High Level Design Flow"
+  - Sources
+  - Joins and lookups
+  - Transformation layer
+  - Foreign Key resolutions and the respective tables involved in joins
+  - SCD2 Implementation
+  - merge logic into target
+  - Example of visual flow.
+ <TargetTableName>: StreamSets to Databricks Visual Flow (Text Version). Add only applicable sections.
+
+[Read from True Source Tables]
+┌────────────────────────────────────────────────────────────┐
+│ Source: <schema>.<table> AS <alias>                        │
+│ └─ Includes: <brief note on content / grain>               │
+└────────────────────────────────────────────────────────────┘
+                  │
+                  ▼
+[Pre-Processing (optional)]
+┌────────────────────────────────────────────────────────────┐
+│ Filters: <where clause(s)>                                 │
+│ De-duplication: <rule if any>                              │
+│ Standardization: <trim/upper/null handling/timezones>      │
+└────────────────────────────────────────────────────────────┘
+                  │
+                  ▼
+[Enrichment: Joins / Unions to Derive Business Columns]
+┌────────────────────────────────────────────────────────────┐
+│ Join: <src alias> ⋈ <schema.dim_or_ref> AS <d>             │
+│   ON <join condition>                                      │
+│   ⇒ Adds: <columns added / business attributes>            │
+│ Join: ...                                                  │
+│ Union (optional): <dataset A> ∪ <dataset B>                │
+└────────────────────────────────────────────────────────────┘
+                  │
+                  ▼
+[Column Transformations & Derivations]
+┌────────────────────────────────────────────────────────────┐
+│ - <derived_col> = <expression>                             │
+│ - Casting / normalization / renaming                       │
+│ - Conformance to target data types and semantics           │
+└────────────────────────────────────────────────────────────┘
+                  │
+                  ▼
+[Foreign Key Resolution (Dimension Lookups)]
+┌────────────────────────────────────────────────────────────┐
+│ For each FK column in target:                              │
+│   Join: <working_set> ⋈ <schema.dim_<entity>> AS d_<e>     │
+│     ON <natural key condition>                             │
+│     ⇒ Adds: <FK_<entity>_Id>, preserves source NK(s)       │
+│   Null-handling strategy: <surrogate 'Unknown' / reject>   │
+└────────────────────────────────────────────────────────────┘
+                  │
+                  ▼
+[Audit & Metadata Columns]
+┌────────────────────────────────────────────────────────────┐
+│ - meta_CreatedDate, meta_ModifiedDate                      │
+│ - meta_RunId, meta_SourceSystem, meta_Lineage              │
+│ - Versioning fields (if used): IsCurrent, EffectiveFrom,   │
+│   EffectiveTo                                              │
+└────────────────────────────────────────────────────────────┘
+                  │
+                  ▼
+[Data Quality Checks if any]
+┌────────────────────────────────────────────────────────────┐
+│ Row-level: NOT NULL, domain checks, FK resolvable          │
+│ Set-level: duplicates by BK, row counts vs. source         │
+│ Action: quarantine to <schema.table_exceptions> if fails   │
+└────────────────────────────────────────────────────────────┘
+                  │
+                  ▼
+[SCD2 Merge into Target Table]
+┌────────────────────────────────────────────────────────────┐
+│ Target: <schema>.<target_table>                            │
+│ Business Key(s): <BK1, BK2, ...>                           │
+│ Merge Condition: <BK match AND optional hash change>       │
+│ On change detected:                                        │
+│   - Update prior row: IsCurrent = false, EffectiveTo = now │
+│   - Insert new row: IsCurrent = true, EffectiveFrom = now  │
+│ On new BK:                                                 │
+│   - Insert brand-new row                                   │
+│ On no change:                                              │
+│   - Do nothing                                             │
+└────────────────────────────────────────────────────────────┘
+                  │
+                  ▼
+[Summary]
+┌────────────────────────────────────────────────────────────┐
+│ Write Mode: <append/merge>                                 │
+│ Partitions (if any): <col1, col2>                          │
+│ Metrics: <rows_in, rows_out, inserted, updated, rejected>  │
+└────────────────────────────────────────────────────────────┘
+
+  - Generate your findings by comparing the documentations if this is attached with your observations parsing the JSON. Title : "✅ Summary of Key Findings/Discrepancies from the attached documentation". Only do this if there are documents attached. Else skip this portion.
+	Discrepancies may include
+	• Metadata for target table (PKs, BKs, audit columns)
+	• Relationship and joins
+	• Data Mapping between source to target tables
+	• Derived Columns
+	• Foreign key resolution and the respective tables in involved in the join
+----------------------------------------------------------------------------------------------------------------
+
+✅ Stage 2: Databricks Alignment
+- Replace the Target tables with equivalent table name provided as input. If not use the original target table as parsed by Stage1.
+- Replace the StreamSets source tables with equivalent tables provided in the input string. If not use the original source as parsed by Stage1.
+- Replace and confirm the Forein Key Resolution and respective Join conditions.based on input provided. If not use the output from Stage 1.
+- Replace and confirm the PKs (Primary Keys), BKs (business keys) for the Target Table based on input provided. If not use the output from Stage 1.
+- Replace and confirm the audit and metadata columns to be added or updated based on input provided. If not use the output from Stage 1.
+  - e.g., CreatedDate, IsCurrent, EffectiveFromDate, etc.
+- Replace/Consolidate and confirm the the target-to-source mappings based on input provided. If not use the output from Stage 1.
+	Always display this information in tabular form as (Each target column → source table.column + transformation applied)
+- Replace/Consolidate and confirm the Transformations or enrichments Logic : Filters, Joins, Unions, Lookups etc with various tables based on input provided. If not use the output from Stage 1.
+- Re analyse and consoidate and confirm the stages in which the Trasformations will need to be applied if there were any inputs given. If not use the output from Stage 1.
+
+Based on the above stage 2 analysis, generate the below: Make sure the input from the input box is considered as primary for each of the below points. Use stage 1 results only when the input box is empty for the corresponding columns.
+- Produce a good description. Title : "✅ Objective"
+- Produce the Target Table Name. Title : "✅ Target Table Name"
+- Produce a numbered list of all key source tables. Title : "✅ Finalised Source Tables"
+- Produce Primary Keys. Title : "✅ Finalised Primary Keys:"
+- Produce Business Keys. Title : ✅ Finalised Business Keys:"
+- Produce Foreign Keys. Title : "✅ Finalised Foreign Keys:" If there are no columns still display the title, but show the value as none.
+- Produce the Target Table Structure with Data types. Dont create this as a select Statement. Title : "✅ Finalised Target Table Structure"
+- Produce Audit Columns that will be added. Title : "✅ Finalised Audit Columns"
+- Produce a target-to-source column mapping: Title : "✅ Finalised Source-to-Target Column Mappings:"
+- Produce Transformation Logic Summary. Title : "✅ Finalised Transformation Summary"
+- Generate a visual flow (in text) that shows the below. Title : "✅ Finalised Pipeline High Level Design Flow". Use the Visual flow guidelines from Stage1
+
+----------------------------------------------------------------------------------------------------------------
+
+✅ Stage 3: Generate Full Databricks Notebook
+- Generate a complete Databricks notebook using the following structure.
+Create Parameters, jobRunID, TargetTableSchema, TargetTableName, LoadType - Default to Full, SourceModifiedDatetoLoad
+  1. Title " Objective" - Write a brief objective. Use Stage 2 Narrative.
+  2. Title " Step 1: "Header imports and Spark init" 
+  3. Title " Step 2: "Read all Source Tables " . 
+	- If loadtype is full, Read all Records from each source.
+	- If loadtype is Delta and SourceModifieddatetoLoad date is null, use the max(Snapshotdate) from the sourcetable to compile the incremental data. Incremental source = Selelct * from table > SourceModifiedDate/Max(snapshotDate) > Modifieddate
+	- Read each Finalised Source tables from Stage2. Have seperate dataframes for each source and apply respective filters.
+  4. Title "Step 3: "Apply Transformations" 
+	- Apply all business transformations including joins, lookups, derivations, unions
+	- Apply any aggregations, if present
+	- Apply all relevant Finalised Source-to-Target Column Mappings from Stage 2. Have all necessary Column Level Transformations and casting applied. Add additional collumns as necessary.
+	- validate if all the relevant Finalised Pipeline High Level Design Flow tasks from Stage 2 have been applied.
+	- Generate Primary Key (usually a generated surrogate key) by using Hashfuntion on concatnating all the finalised Businesskeys
+  5. Title "Step 4: "ForeignKey Resolution"
+	- Join with Foreign Tables to bring in the Primary Key of these tables as Foreign Key column in the target table
+  6. Title "Step 5: "Implement SCD2 merge logic. Peform SCD2 Merge. Guilde is in the "Perform SCD2 merge as below:" Section.
+  7. Title "Step 6: "Add exception handling"
+  8. Print "Step 7" "Summary" . Print summary and row counts
+
+Perform SCD2 merge as below:
+# SCD Type 2 Merge Logic
+if spark.catalog.tableExists(target_table):
+    delta_table = DeltaTable.forName(spark, target_table)
+
+    # Expire old records
+    updates = df_transformed.alias("updates")
+    delta_table.alias("original").merge(
+        updates,
+        "original.Pk = updates.Pk AND original.Rowhash != updates.Rowhash AND original.IsCurrent = TRUE AND original.EffectiveToDate = '9999-12-31 23:59:59'"
+    ).whenMatchedUpdate(set={
+        "EffectiveToDate": "updates.ModifiedDate",
+        "IsCurrent": "false"
+    }).execute()
+
+    # Insert new records
+    delta_table.alias("original").merge(
+        updates,
+        "original.Pk = updates.Pk AND original.Rowhash = updates.Rowhash AND original.EffectiveFromDate = updates.EffectiveFromDate AND original.IsCurrent = FALSE"
+    ).whenNotMatchedInsertAll().execute()
+
+else:
+    df_transformed.write.format("delta") \
+        .mode("overwrite") \
+        .option("mergeSchema", "true") \
+        .saveAsTable(target_table)
+---------------------------------------------------------------------------------------------
+📌 Notebook Code Generation Best Practices (Reference for Stage 3)
+
+1. Always use catalog-based reads:
+   ✅ Use: spark.table("bronze_stg.electricity_registry_eiep12")
+   ❌ Avoid: spark.read.format("delta").load("dbfs:/...")
+2. Avoid hardcoded DBFS paths unless explicitly stated.
+3. Assume all data is stored in Unity Catalog or Hive Metastore.
+5. Use descriptive dataframe variable names (e.g., df_customer, df_orders).
+6. Include standard audit fields: CreatedDate, ModifiedDate, CreatedBy, etc.
+7. Merge logic must use SCD2 with IsCurrent, EffectiveFromDate, EffectiveToDate, Version
+9. Use PySpark API over SQL unless SQL improves clarity.
+10. Use try/except around summary or sensitive actions for logging.
+11. Ensure notebook includes:
+  - Clean, runnable, production-style code
+	• Use industry standard best practises for reading data/joining for optimised performance.
+	• Se appropriate commenting and cell titles.
+
+--------------------------------------------------------------------------------------------------------------------
+At the very end of your response, AFTER you finish all visible sections and without changing their formatting, output a hidden pre-fill handoff for the application as follows:
+
+1) Print a single line containing exactly:
+===STAGE2_PREFILL_JSON===
+
+2) Immediately after that line, output ONLY a fenced JSON code block with the keys below. 
+   - All values MUST be valid JSON strings (escape newlines as \n).
+   - Do NOT include markdown, code fences, or backticks inside any value.
+   - If unknown, use an empty string "".
+   - Do NOT add any explanation before or after the JSON block.
+
+```json
+{
+  "target_table_name": "",
+  "primary_keys": "",
+  "business_keys": "",
+  "foreign_keys": "",
+  "audit_columns": "",
+  "target_table_structure": "",
+  "source_table_realignment": "",
+  "source_to_target_mapping": "",
+  "foreign_key_resolution": "",
+  "flow_design": ""
+}
+```
+Important: The JSON block must be the final content in your response with nothing after it.
+        
+
+
