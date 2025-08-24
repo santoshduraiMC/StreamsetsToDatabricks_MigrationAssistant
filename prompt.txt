@@ -12,6 +12,7 @@ Your task is divided into three stages:
   - All joins (especially to lookups and other dimension tables)
 
 Produce the following:
+- NOTE: Make sure the title is exactly as descripted. Do not alter this or add "#" infront of the title. The details should follow immediately in a new line following the title.
 - Come up with Short business descriptions of what the Pipeline is trying to achieve. Use the source tables and target tables as referece. Write this as bullet points. Title : "✅ Objective"
 - Produce the Target Table Name. Title : "✅ Target Table Name"
 - Produce a numbered list of all key source tables. Title : "✅ Source Tables"
@@ -170,8 +171,7 @@ Create Parameters, jobRunID, TargetTableSchema, TargetTableName, LoadType - Defa
   5. Title "Step 4: "ForeignKey Resolution"
 	- Join with Foreign Tables to bring in the Primary Key of these tables as Foreign Key column in the target table
   6. Title "Step 5: "Implement SCD2 merge logic. Peform SCD2 Merge. Guilde is in the "Perform SCD2 merge as below:" Section.
-  7. Title "Step 6: "Add exception handling"
-  8. Print "Step 7" "Summary" . Print summary and row counts
+  8. Print "Step 7" "Summary" . Print summary . Number of records inserted , updated etc. total row count in the target.
 
 Perform SCD2 merge as below:
 # SCD Type 2 Merge Logic
@@ -228,6 +228,7 @@ At the very end of your response, AFTER you finish all visible sections and with
    - Do NOT include markdown, code fences, or backticks inside any value.
    - If unknown, use an empty string "".
    - Do NOT add any explanation before or after the JSON block.
+   - source_to_target_mapping should be the represent Each target column → source table.column + transformation applied. Represent this is a tabular easy to read form.
 
 ```json
 {
@@ -244,6 +245,4 @@ At the very end of your response, AFTER you finish all visible sections and with
 }
 ```
 Important: The JSON block must be the final content in your response with nothing after it.
-        
-
 
